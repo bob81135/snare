@@ -18,10 +18,10 @@ class Logger:
     @staticmethod
     def create_logger(debug_filename, err_filename, logger_name):
         logger = logging.getLogger(logger_name)
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.INFO)
         logger.propagate = False
         formatter = logging.Formatter(
-            fmt='%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s',
+            fmt='%(asctime)s/%(message)s',
             datefmt='%Y-%m-%d %H:%M:%S')
 
         # ERROR log to 'snare.err'

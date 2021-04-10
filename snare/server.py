@@ -7,8 +7,46 @@ import aiohttp_jinja2
 import jinja2
 from snare.middlewares import SnareMiddleware
 from snare.tanner_handler import TannerHandler
-
-
+from aiohttp.abc import AbstractAccessLogger
+from http_basic_auth import parse_header
+import os
+class RuleAccessLogger(AbstractAccessLogger):
+    sensitives = ["/user"]
+    def log_message(self, remote, port, log_type, raw_data):
+        log_string = "%s/%s/%s/%s" %(remote, port, log_type, raw_data)
+        self.logger.info(log_string)
+    def log(self, request, response, time):
+        port = request.host.split(":")[-1]
+        if(response.status in [401,403]):
+            try:
+                login, password = parse_header(request.headers["Authorization"])
+                user = {}
+                user[login] = password
+                # print("暴力破解",request.path_qs, login, password)
+                self.log_message(request.remote, port, "1", str(user))
+            except BasicAuthException:
+                pass
+        elif(response.status==404):
+            filename, file_extension = os.path.splitext(request.path_qs)
+            if(file_extension==""):
+                # print("目錄猜測",request.path_qs)
+                self.log_message(request.remote, port, "3", '"'+request.path_qs+'"')
+            else:
+                # print("檔案猜測",request.path_qs)
+                self.log_message(request.remote, port, "4", '"'+request.path_qs+'"')
+        elif(response.status==200):
+            if("Authorization" in request.headers):
+                try:
+                    login, password = parse_header(request.headers["Authorization"])
+                    user = {}
+                    user[login] = password
+                    # print("登入成功",request.path_qs, login,password)
+                    self.log_message(request.remote, port, "2", str(user))
+                except BasicAuthException:
+                    pass
+            if(request.path_qs in self.sensitives):
+                # print("敏感資料",request.path_qs)
+                self.log_message(request.remote, port, "5", '"'+request.path_qs+'"')
 class HttpRequestHandler():
     def __init__(
             self,
@@ -43,13 +81,13 @@ class HttpRequestHandler():
             self.logger.error('Error submitting slurp: %s', e)
 
     async def handle_request(self, request):
-        self.logger.info('Request path: {0}'.format(request.path_qs))
+        # self.logger.info('Request path: {0}'.format(request.path_qs))
         data = self.tanner_handler.create_data(request, 200)
         if request.method == 'POST':
             post_data = await request.post()
-            self.logger.info('POST data:')
-            for key, val in post_data.items():
-                self.logger.info('\t- {0}: {1}'.format(key, val))
+            # self.logger.info('POST data:')
+            # for key, val in post_data.items():
+            #     self.logger.info('\t- {0}: {1}'.format(key, val))
             data['post_data'] = dict(post_data)
 
         # Submit the event to the TANNER service
@@ -97,6 +135,8 @@ class HttpRequestHandler():
         middleware.setup_middlewares(app)
         
         middleware.auth_middlewares(app, auth_list, user_dict)
+        
+        self.runner = web.AppRunner(app,access_log_class=RuleAccessLogger)
         self.runner = web.AppRunner(app)
         await self.runner.setup()
         site = web.TCPSite(
