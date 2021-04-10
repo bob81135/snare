@@ -137,7 +137,6 @@ class HttpRequestHandler():
         middleware.auth_middlewares(app, auth_list, user_dict)
         
         self.runner = web.AppRunner(app,access_log_class=RuleAccessLogger)
-        self.runner = web.AppRunner(app)
         await self.runner.setup()
         site = web.TCPSite(
             self.runner,
