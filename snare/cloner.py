@@ -170,6 +170,7 @@ class Cloner(object):
             if data is not None:
                 self.meta[file_name]['hash'] = hash_name
                 self.meta[file_name]['headers'] = headers
+                self.meta[file_name]['status'] = response.status
                 self.counter = self.counter + 1
 
                 if content_type == 'text/html':
