@@ -89,8 +89,14 @@ class HttpRequestHandler():
             headers=self.meta['/status_404'].get('headers', []),
             server_header=self.run_args.server_header
         )
+        auth_list = []
+        user_dict = {}
+        for i in self.meta:
+            if(self.meta[i]['status'] in [401,403]):
+                auth_list.append(i)
         middleware.setup_middlewares(app)
-
+        
+        middleware.auth_middlewares(app, auth_list, user_dict)
         self.runner = web.AppRunner(app)
         await self.runner.setup()
         site = web.TCPSite(

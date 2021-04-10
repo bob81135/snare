@@ -1,7 +1,7 @@
 import aiohttp_jinja2
 import multidict
 from aiohttp import web
-
+from aiohttp_basicauth_middleware import basic_auth_middleware
 
 class SnareMiddleware():
 
@@ -51,3 +51,10 @@ class SnareMiddleware():
             500: self.handle_500,
         })
         app.middlewares.append(error_middleware)
+    def auth_middlewares(self, app, auth_list:[], user_dict:{'user': 'password'}):
+        app.middlewares.append(
+            basic_auth_middleware(
+                auth_list,
+                user_dict,
+            )
+        )
