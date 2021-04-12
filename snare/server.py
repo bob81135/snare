@@ -23,17 +23,17 @@ class RuleAccessLogger(AbstractAccessLogger):
                 user = {}
                 user[login] = password
                 # print("暴力破解",request.path_qs, login, password)
-                self.log_message(request.remote, port, "1", str(user))
+                self.log_message(request.remote, port, "暴力破解", str(user))
             except BasicAuthException:
                 pass
         elif(response.status==404):
             filename, file_extension = os.path.splitext(request.path_qs)
             if(file_extension==""):
                 # print("目錄猜測",request.path_qs)
-                self.log_message(request.remote, port, "3", '"'+request.path_qs+'"')
+                self.log_message(request.remote, port, "目錄猜測", '"'+request.path_qs+'"')
             else:
                 # print("檔案猜測",request.path_qs)
-                self.log_message(request.remote, port, "4", '"'+request.path_qs+'"')
+                self.log_message(request.remote, port, "檔案猜測", '"'+request.path_qs+'"')
         elif(response.status==200):
             if("Authorization" in request.headers):
                 try:
@@ -41,12 +41,12 @@ class RuleAccessLogger(AbstractAccessLogger):
                     user = {}
                     user[login] = password
                     # print("登入成功",request.path_qs, login,password)
-                    self.log_message(request.remote, port, "2", str(user))
+                    self.log_message(request.remote, port, "登入成功", str(user))
                 except BasicAuthException:
                     pass
             if(request.path_qs in self.sensitives):
                 # print("敏感資料",request.path_qs)
-                self.log_message(request.remote, port, "5", '"'+request.path_qs+'"')
+                self.log_message(request.remote, port, "敏感資料", '"'+request.path_qs+'"')
 class HttpRequestHandler():
     def __init__(
             self,
@@ -127,11 +127,11 @@ class HttpRequestHandler():
             headers=self.meta['/status_404'].get('headers', []),
             server_header=self.run_args.server_header
         )
-        auth_list = []
-        user_dict = {}
+        auth_list = set()
+        user_dict = {"user":"password", "test":"test123"}
         for i in self.meta:
             if(self.meta[i]['status'] in [401,403]):
-                auth_list.append(i)
+                auth_list.add(i)
         middleware.setup_middlewares(app)
         
         middleware.auth_middlewares(app, auth_list, user_dict)
