@@ -32,7 +32,7 @@ class Cloner(object):
         self.css_validate = css_validate
         self.new_urls = Queue()
         self.meta = defaultdict(dict)
-
+        self.setting = {"sensitives":[],"auth_list":[],"user_dict":{"user":"password"}}
         self.counter = 0
         self.itr = 0
 
@@ -170,7 +170,8 @@ class Cloner(object):
             if data is not None:
                 self.meta[file_name]['hash'] = hash_name
                 self.meta[file_name]['headers'] = headers
-                self.meta[file_name]['status'] = response.status
+                if(response.status in [401,403]):
+                    self.setting["auth_list"].append(file_name)
                 self.counter = self.counter + 1
 
                 if content_type == 'text/html':
@@ -212,4 +213,6 @@ class Cloner(object):
         finally:
             with open(os.path.join(self.target_path, 'meta.json'), 'w') as mj:
                 json.dump(self.meta, mj)
+            with open(os.path.join(self.target_path, 'setting.json'), 'w') as mj:
+                json.dump(self.setting, mj)
             await session.close()

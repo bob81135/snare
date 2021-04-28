@@ -9,13 +9,17 @@ from snare.middlewares import SnareMiddleware
 from snare.tanner_handler import TannerHandler
 from aiohttp.abc import AbstractAccessLogger
 from http_basic_auth import parse_header
+from aiohttp_basicauth_middleware import check_access
 import os
+from snare.utils.get_setting_file import get_setting
+setting_dir = ""
 class RuleAccessLogger(AbstractAccessLogger):
-    sensitives = ["/user"]
     def log_message(self, remote, port, log_type, raw_data):
         log_string = "%s/%s/%s/%s" %(remote, port, log_type, raw_data)
         self.logger.info(log_string)
     def log(self, request, response, time):
+        global setting_dir
+        setting_info = get_setting(setting_dir)
         port = request.host.split(":")[-1]
         if(response.status in [401,403]):
             try:
@@ -35,7 +39,7 @@ class RuleAccessLogger(AbstractAccessLogger):
                 # print("檔案猜測",request.path_qs)
                 self.log_message(request.remote, port, "檔案猜測", '"'+request.path_qs+'"')
         elif(response.status==200):
-            if("Authorization" in request.headers):
+            if("Authorization" in request.headers and check_access(setting_info['user_dict'], request.headers["Authorization"])):
                 try:
                     login, password = parse_header(request.headers["Authorization"])
                     user = {}
@@ -44,7 +48,7 @@ class RuleAccessLogger(AbstractAccessLogger):
                     self.log_message(request.remote, port, "登入成功", str(user))
                 except BasicAuthException:
                     pass
-            if(request.path_qs in self.sensitives):
+            if(request.path_qs in setting_info['sensitives']):
                 # print("敏感資料",request.path_qs)
                 self.log_message(request.remote, port, "敏感資料", '"'+request.path_qs+'"')
 class HttpRequestHandler():
@@ -58,6 +62,9 @@ class HttpRequestHandler():
             **kwargs):
         self.run_args = run_args
         self.dir = run_args.full_page_path
+        global setting_dir 
+        setting_dir = self.dir
+        self.setting_info = get_setting(setting_dir)
         self.meta = meta
         self.snare_uuid = snare_uuid
         self.logger = logging.getLogger(__name__)
@@ -127,14 +134,8 @@ class HttpRequestHandler():
             headers=self.meta['/status_404'].get('headers', []),
             server_header=self.run_args.server_header
         )
-        auth_list = set()
-        user_dict = {"user":"password", "test":"test123"}
-        for i in self.meta:
-            if(self.meta[i]['status'] in [401,403]):
-                auth_list.add(i)
         middleware.setup_middlewares(app)
-        
-        middleware.auth_middlewares(app, auth_list, user_dict)
+        middleware.auth_middlewares(app, self.setting_info['auth_list'], self.setting_info['user_dict'])
         
         self.runner = web.AppRunner(app,access_log_class=RuleAccessLogger)
         await self.runner.setup()
