@@ -27,30 +27,35 @@ class RuleAccessLogger(AbstractAccessLogger):
                 user = {}
                 user[login] = password
                 # print("暴力破解",request.path_qs, login, password)
-                self.log_message(request.remote, port, "暴力破解", str(user))
+                self.log_message(request.remote, port, "Brute_force", str(user))
             except BasicAuthException:
                 pass
         elif(response.status==404):
             filename, file_extension = os.path.splitext(request.path_qs)
             if(file_extension==""):
                 # print("目錄猜測",request.path_qs)
-                self.log_message(request.remote, port, "目錄猜測", '"'+request.path_qs+'"')
+                self.log_message(request.remote, port, "Directory_guess", '"'+request.path_qs+'"')
             else:
                 # print("檔案猜測",request.path_qs)
-                self.log_message(request.remote, port, "檔案猜測", '"'+request.path_qs+'"')
+                self.log_message(request.remote, port, "File_guess", '"'+request.path_qs+'"')
         elif(response.status==200):
-            if("Authorization" in request.headers and check_access(setting_info['user_dict'], request.headers["Authorization"])):
+            if("Authorization" in request.headers and self.check_list(request.path_qs,setting_info['auth_list'])):
                 try:
                     login, password = parse_header(request.headers["Authorization"])
                     user = {}
                     user[login] = password
                     # print("登入成功",request.path_qs, login,password)
-                    self.log_message(request.remote, port, "登入成功", str(user))
+                    self.log_message(request.remote, port, "login_success", str(user))
                 except BasicAuthException:
                     pass
-            if(request.path_qs in setting_info['sensitives']):
+            if(self.check_list(request.path_qs, setting_info['sensitives'])):
                 # print("敏感資料",request.path_qs)
-                self.log_message(request.remote, port, "敏感資料", '"'+request.path_qs+'"')
+                self.log_message(request.remote, port, "sensitives", '"'+request.path_qs+'"')
+    def check_list(self, url, path_list):
+        for path in path_list:
+            if(url.startswith(path)):
+                return True
+        return False
 class HttpRequestHandler():
     def __init__(
             self,
