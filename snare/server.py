@@ -27,17 +27,17 @@ class RuleAccessLogger(AbstractAccessLogger):
                 user = {}
                 user[login] = password
                 # print("暴力破解",request.path_qs, login, password)
-                self.log_message(request.remote, port, "Brute_force", str(user))
+                self.log_message(request.remote, port, "loginFaild", str(user))
             except BasicAuthException:
                 pass
         elif(response.status==404):
             filename, file_extension = os.path.splitext(request.path_qs)
             if(file_extension==""):
                 # print("目錄猜測",request.path_qs)
-                self.log_message(request.remote, port, "Directory_guess", '"'+request.path_qs+'"')
+                self.log_message(request.remote, port, "directoryGuess", '"'+request.path_qs+'"')
             else:
                 # print("檔案猜測",request.path_qs)
-                self.log_message(request.remote, port, "File_guess", '"'+request.path_qs+'"')
+                self.log_message(request.remote, port, "fileGuess", '"'+request.path_qs+'"')
         elif(response.status==200):
             if("Authorization" in request.headers and self.check_list(request.path_qs,setting_info['auth_list'])):
                 try:
@@ -45,16 +45,25 @@ class RuleAccessLogger(AbstractAccessLogger):
                     user = {}
                     user[login] = password
                     # print("登入成功",request.path_qs, login,password)
-                    self.log_message(request.remote, port, "login_success", str(user))
+                    self.log_message(request.remote, port, "loginSuccess", str(user))
                 except BasicAuthException:
                     pass
             if(self.check_list(request.path_qs, setting_info['sensitives'])):
                 # print("敏感資料",request.path_qs)
-                self.log_message(request.remote, port, "sensitives", '"'+request.path_qs+'"')
+                self.log_message(request.remote, port, "sensitiveFiles", '"'+request.path_qs+'"')
     def check_list(self, url, path_list):
+        filename, file_extension = os.path.splitext(url)
         for path in path_list:
-            if(url.startswith(path)):
-                return True
+            pathname, path_extension = os.path.splitext(path)
+            if(file_extension==""):
+                filename+="/"
+            if(path_extension==""):
+                pathname+="/"
+                if(filename.startswith(pathname)):
+                    return True
+            else:
+                if(url == path):
+                    return True
         return False
 class HttpRequestHandler():
     def __init__(
