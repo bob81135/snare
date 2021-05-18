@@ -1,5 +1,4 @@
 import logging
-import json
 import aiohttp
 from aiohttp import web
 from aiohttp.web import StaticResource as StaticRoute
@@ -9,13 +8,12 @@ from snare.middlewares import SnareMiddleware
 from snare.tanner_handler import TannerHandler
 from aiohttp.abc import AbstractAccessLogger
 from http_basic_auth import parse_header
-from aiohttp_basicauth_middleware import check_access
 import os
 from snare.utils.get_setting_file import get_setting
 setting_dir = ""
 class RuleAccessLogger(AbstractAccessLogger):
     def log_message(self, remote, port, log_type, raw_data):
-        log_string = "%s/%s/%s/%s" %(remote, port, log_type, raw_data)
+        log_string = "%s---%s---%s---%s" %(remote, port, log_type, raw_data)
         self.logger.info(log_string)
     def log(self, request, response, time):
         global setting_dir
@@ -28,13 +26,13 @@ class RuleAccessLogger(AbstractAccessLogger):
                 user[login] = password
                 # print("暴力破解",request.path_qs, login, password)
                 self.log_message(request.remote, port, "loginFaild", str(user))
-            except BasicAuthException:
+            except:
                 pass
         elif(response.status==404):
             filename, file_extension = os.path.splitext(request.path_qs)
             if(file_extension==""):
                 # print("目錄猜測",request.path_qs)
-                self.log_message(request.remote, port, "directoryGuess", '"'+request.path_qs+'"')
+                self.log_message(request.remote, port, "directoryGuess", request.path_qs)
             else:
                 # print("檔案猜測",request.path_qs)
                 self.log_message(request.remote, port, "fileGuess", '"'+request.path_qs+'"')
@@ -46,11 +44,11 @@ class RuleAccessLogger(AbstractAccessLogger):
                     user[login] = password
                     # print("登入成功",request.path_qs, login,password)
                     self.log_message(request.remote, port, "loginSuccess", str(user))
-                except BasicAuthException:
+                except:
                     pass
             if(self.check_list(request.path_qs, setting_info['sensitives'])):
                 # print("敏感資料",request.path_qs)
-                self.log_message(request.remote, port, "sensitiveFiles", '"'+request.path_qs+'"')
+                self.log_message(request.remote, port, "sensitiveFiles", request.path_qs)
     def check_list(self, url, path_list):
         filename, file_extension = os.path.splitext(url)
         for path in path_list:

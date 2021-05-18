@@ -1,6 +1,6 @@
 import logging
 import logging.handlers
-
+import snare.utils.save_mysql as mysqlhandler
 
 class LevelFilter(logging.Filter):
     """Filters (lets through) all messages with level < LEVEL"""
@@ -21,7 +21,7 @@ class Logger:
         logger.setLevel(logging.INFO)
         logger.propagate = False
         formatter = logging.Formatter(
-            fmt='%(asctime)s/%(message)s',
+            fmt='%(asctime)s---%(message)s',
             datefmt='%Y-%m-%d %H:%M:%S')
 
         # ERROR log to 'snare.err'
@@ -37,6 +37,11 @@ class Logger:
         max_level_filter = LevelFilter(logging.ERROR)
         debug_log_handler.addFilter(max_level_filter)
         logger.addHandler(debug_log_handler)
+
+        mysql_log_handler = mysqlhandler.LoggerHandlerToMysql()
+        mysql_log_handler.setFormatter(formatter)
+        mysql_log_handler.setLevel(logging.INFO)
+        logger.addHandler(mysql_log_handler)
 
         return logger
 
