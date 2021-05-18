@@ -8,6 +8,7 @@ class LoggerHandlerToMysql(logging.Handler):
         self.password = "123456"
         self.port = 3306
         self.db = "honeypot"
+        self.table = "HTTP"
         logging.Handler.__init__(self)
 
 
@@ -16,8 +17,8 @@ class LoggerHandlerToMysql(logging.Handler):
         cursor = db.cursor()
         message = record.message
         message_format = message.split("---")
-        sql = "INSERT INTO HTTP(TIME, IP, PORT, DATA_TYPE, MSG) VALUES ('%s', '%s', '%s', '%s', '%s' )"\
-             % (record.asctime ,message_format[0],message_format[1],message_format[2],message_format[3])
+        sql = "INSERT INTO %s(TIME, IP, PORT, DATA_TYPE, MSG) VALUES ('%s', '%s', '%s', '%s', '%s' )"\
+             % (self.table, record.asctime ,message_format[0],message_format[1],message_format[2],message_format[3])
         try:
             cursor.execute(sql)
             db.commit()
