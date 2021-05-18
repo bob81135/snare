@@ -1,0 +1,8 @@
+CREATE TABLE HTTP (
+    id INT NOT NULL Auto_Increment primary key,
+    time timestamp,
+    ip VARCHAR(255),
+    port VARCHAR(255),
+    data_type VARCHAR(255),
+    MSG VARCHAR(255)
+);
