@@ -14,8 +14,8 @@ from snare.utils.get_setting_file import get_setting
 setting_dir = ""
 class RuleAccessLogger(AbstractAccessLogger):
     def log_message(self, remote, port, log_type, raw_data):
-        log_string = "%s---%s---%s---%s" %(remote, port, log_type, raw_data)
-        self.logger.info(log_string)
+        log_string = [remote, port, log_type, raw_data]
+        self.logger.info(json.dumps(log_string))
     def log(self, request, response, time):
         global setting_dir
         setting_info = get_setting(setting_dir)

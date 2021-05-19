@@ -1,5 +1,6 @@
 import logging
 import pymysql
+import json
 
 class LoggerHandlerToMysql(logging.Handler):
     def __init__(self):
@@ -15,11 +16,10 @@ class LoggerHandlerToMysql(logging.Handler):
     def emit(self,record):
         db = pymysql.connect(host=self.host, port=self.port, user=self.admin,password=self.password,db=self.db)
         cursor = db.cursor()
-        message = record.message
-        message_format = message.split("---")
-        sql = "INSERT INTO %s(TIME, IP, PORT, DATA_TYPE, MSG) VALUES ('%s', '%s', '%s', '%s', '%s' )"\
-             % (self.table, record.asctime ,message_format[0],message_format[1],message_format[2],message_format[3])
         try:
+            message_format = json.loads(record.message)
+            sql = "INSERT INTO %s(TIME, IP, PORT, DATA_TYPE, MSG) VALUES ('%s', '%s', '%s', '%s', '%s' )"\
+             % (self.table, record.asctime ,message_format[0],message_format[1],message_format[2],message_format[3])
             cursor.execute(sql)
             db.commit()
         except:
