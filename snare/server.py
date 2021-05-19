@@ -4,6 +4,7 @@ from aiohttp import web
 from aiohttp.web import StaticResource as StaticRoute
 import aiohttp_jinja2
 import jinja2
+import json
 from snare.middlewares import SnareMiddleware
 from snare.tanner_handler import TannerHandler
 from aiohttp.abc import AbstractAccessLogger
@@ -25,7 +26,7 @@ class RuleAccessLogger(AbstractAccessLogger):
                 user = {}
                 user[login] = password
                 # print("暴力破解",request.path_qs, login, password)
-                self.log_message(request.remote, port, "loginFaild", str(user))
+                self.log_message(request.remote, port, "loginFaild", json.dumps(user))
             except:
                 pass
         elif(response.status==404):
@@ -35,7 +36,7 @@ class RuleAccessLogger(AbstractAccessLogger):
                 self.log_message(request.remote, port, "directoryGuess", request.path_qs)
             else:
                 # print("檔案猜測",request.path_qs)
-                self.log_message(request.remote, port, "fileGuess", '"'+request.path_qs+'"')
+                self.log_message(request.remote, port, "fileGuess", request.path_qs)
         elif(response.status==200):
             if("Authorization" in request.headers and self.check_list(request.path_qs,setting_info['auth_list'])):
                 try:
@@ -43,7 +44,7 @@ class RuleAccessLogger(AbstractAccessLogger):
                     user = {}
                     user[login] = password
                     # print("登入成功",request.path_qs, login,password)
-                    self.log_message(request.remote, port, "loginSuccess", str(user))
+                    self.log_message(request.remote, port, "loginSuccess", json.dumps(user))
                 except:
                     pass
             if(self.check_list(request.path_qs, setting_info['sensitives'])):
